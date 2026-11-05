@@ -1,0 +1,24 @@
+## Interface: 120100
+## Title: Claw Control
+## Notes: Vlastni ovladani WoW Retail pro MSI Claw 7 AI+.
+## Author: Custom layout
+## Version: 0.5.11-alpha
+## SavedVariables: ClawControlDB
+
+Layout.lua
+Settings.lua
+Actions.lua
+Core.lua
+Input.lua
+Radial.lua
+Hud.lua
+NativeBars.lua
+UI.lua
+
+
+
+
+
+
+
+

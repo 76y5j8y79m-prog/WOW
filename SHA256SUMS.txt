@@ -1,0 +1,2 @@
+e4481a42e3f8f4ea14367eec3fc4ab10d921967c204d87da48125bb207bb067c  dist/ClawControl-0.5.11-alpha.zip
+86511b2324d9eb6d91cdf861304f8168e842182d762baa33623986858af54ab1  dist/XboxControlPC-1.0.0-alpha.zip
