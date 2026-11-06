@@ -11,20 +11,40 @@ local function isConsolePortLoaded()
 end
 
 function CC:FindDevice()
-    local id = C_GamePad.GetActiveDeviceID()
-    local ids = C_GamePad.GetAllDeviceIDs()
-    if self.db.deviceID then
-        for _, candidate in ipairs(ids) do
-            if candidate == self.db.deviceID then id = candidate; break end
+    local candidates, seen = {}, {}
+    local function add(id)
+        if type(id)=="number" and not seen[id] then seen[id]=true; candidates[#candidates+1]=id end
+    end
+    add(self.db.deviceID)
+    add(C_GamePad.GetActiveDeviceID())
+    for _,id in ipairs(C_GamePad.GetAllDeviceIDs()) do add(id) end
+    for _,id in ipairs(candidates) do
+        local ok,raw=pcall(C_GamePad.GetDeviceRawState,id)
+        if ok and raw and type(raw.vendorID)=="number" and type(raw.productID)=="number" then
+            return {vendorID=raw.vendorID,productID=raw.productID},raw.name,id
         end
     end
-    local ok, raw = pcall(C_GamePad.GetDeviceRawState, id)
-    if not ok or not raw then
-        id = ids[1]
-        if id then ok, raw = pcall(C_GamePad.GetDeviceRawState, id) end
-    end
-    if not ok or not raw then return nil end
-    return {vendorID = raw.vendorID, productID = raw.productID}, raw.name, id
+end
+
+function CC:CancelDeviceSearch(restore)
+    local search=self.deviceSearch
+    if search and search.timer then search.timer:Cancel() end
+    self.deviceSearch=nil
+    local original=search and search.originalEnable or self.db.deviceSearchBackup
+    self.db.deviceSearchBackup=nil
+    if restore~=false and original~=nil then SetCVar("GamePadEnable",original) end
+end
+
+function CC:RetryDeviceSearch(search)
+    search.timer=C_Timer.NewTimer(0.2,function()
+        if self.deviceSearch~=search then return end
+        search.timer=nil
+        if InCombatLockdown() then
+            self:Print("Ovladac dokoncim vyhledavat po skonceni boje.")
+            return
+        end
+        self:Enable(true)
+    end)
 end
 
 function CC:GetDesiredCVars(deviceID)
@@ -145,6 +165,7 @@ end
 
 function CC:Disable()
     if InCombatLockdown() then self:Print("Vypnuti proved mimo boj."); return false end
+    self:CancelDeviceSearch()
     if self.radial and self.radial.opened then self:CloseRadial() end
     self:StopBindings()
     self:StopTurning()
@@ -157,9 +178,10 @@ function CC:Disable()
     return restored
 end
 
-function CC:Enable()
+function CC:Enable(retry)
     if InCombatLockdown() then self:Print("Zapnuti proved mimo boj."); return false end
     if self.active then return true end
+    if self.deviceSearch and not retry then return true end
     if C_AddOns.IsAddOnLoaded("ClawControl") then
         self:Print("Pro Xbox Control PC nejprve vypni addon ClawControl v seznamu addonu a znovu nacti hru.")
         return false
@@ -182,14 +204,27 @@ function CC:Enable()
     -- A persisted snapshot belongs to the previous activation, including across reload.
     -- Restore before taking a new snapshot, so our own settings never become the backup.
     if self.db.backup and not self:RestoreBackup() then return false end
-    local oldEnable = GetCVar("GamePadEnable")
-    SetCVar("GamePadEnable", "1")
+    local search=self.deviceSearch
+    local oldEnable = search and search.originalEnable or GetCVar("GamePadEnable")
+    if GetCVar("GamePadEnable")~="1" then SetCVar("GamePadEnable", "1") end
     local id, name, deviceID = self:FindDevice()
     if not id then
-        SetCVar("GamePadEnable", oldEnable)
-        self:Print("Ovladac nenalezen. Pripoj Xbox ovladac pres USB, Bluetooth nebo bezdratovy adapter a zkus znovu.")
-        return false
+        if not search then
+            search={originalEnable=oldEnable,attempts=0}
+            self.deviceSearch=search
+            self.db.deviceSearchBackup=oldEnable
+            self:Print("Zapinam podporu gamepadu. Hledam Xbox ovladac, stiskni na nem A (max. 8 sekund).")
+        end
+        search.attempts=search.attempts+1
+        if search.attempts>=40 then
+            self:CancelDeviceSearch()
+            self:Print("WoW ovladac stale nevidi. Zkus /console GamePadEnable 1, potom /reload a /xboxcontrol on. Posli /xboxcontrol status.")
+            return false
+        end
+        self:RetryDeviceSearch(search)
+        return true
     end
+    if search then self:CancelDeviceSearch(false) end
     local desired = self:GetDesiredCVars(deviceID)
     local snapshot = {
         id = CopyTable(id), config = C_GamePad.GetConfig(id), cvars = {},
@@ -245,6 +280,7 @@ end
 
 function CC:ApplySettings(values)
     if InCombatLockdown() then self:Print("Nastaveni uprav mimo boj."); return false end
+    if self.deviceSearch then self:CancelDeviceSearch() end
     local candidate = CopyTable(self.db)
     for key, value in pairs(values) do candidate[key] = value end
     local valid, validationError = NS.ValidateProfile(candidate)
@@ -262,6 +298,10 @@ end
 
 function CC:Status()
     self:Print((self.active and "ZAPNUTO" or "VYPNUTO") .. " | WoW " .. tostring(select(4, GetBuildInfo())))
+    self:Print("GamePadEnable="..tostring(GetCVar("GamePadEnable"))..
+        " | zarizeni="..tostring(#C_GamePad.GetAllDeviceIDs())..
+        " | aktivni ID="..tostring(C_GamePad.GetActiveDeviceID())..
+        " | hledani="..tostring(self.deviceSearch~=nil))
     self:Print("Xbox: 6 tlacitek, 4 vrstvy | let=" .. self.db.flight)
     self:Print("Otaceni: maximum=" .. tostring(self.db.turnSpeed) .. ", krivka=" .. tostring(self.db.turnGamma) ..
         ", prave ted=" .. tostring(GetCVar("GamePadCameraYawSpeed")))
@@ -303,7 +343,7 @@ SlashCmdList.XBOXCONTROLPC = function(input)
     elseif cmd == "device" and tonumber(arg) then
         if InCombatLockdown() or CC.active then
             CC:Print("Nejprve mimo boj profil vypni. Pak /xboxcontrol device CISLO a /xboxcontrol on.")
-        else CC.db.deviceID = tonumber(arg); CC:Status() end
+        else CC:CancelDeviceSearch(); CC.db.deviceID = tonumber(arg); CC:Status() end
     elseif cmd == "test" then
         CC.testing = not CC.testing
         CC:EnableGamePadButton(false)
@@ -333,13 +373,21 @@ CC:SetScript("OnEvent", function(self, event, name)
         NS.InitProfile(self.db)
         self:CreateUI()
     elseif event == "PLAYER_LOGIN" then
+        if self.db.deviceSearchBackup~=nil then self:CancelDeviceSearch() end
         if self.db.enabled then self:Enable()
         elseif self.db.backup then self:RestoreBackup() end
-        self:Print("Verze 1.0.0 alpha. View: mapa | Menu: kruhovy volic | Nastaveni: ikona / L3")
-    elseif event == "ADDON_LOADED" and name == "ConsolePort" and self.active then
+        self:Print("Verze 1.0.1 alpha. View: mapa | Menu: kruhovy volic | Nastaveni: ikona / L3")
+    elseif event=="PLAYER_REGEN_ENABLED" and self.deviceSearch then
+        self:Enable(true)
+    elseif event=="PLAYER_LOGOUT" and self.deviceSearch then
+        self:CancelDeviceSearch()
+    elseif event == "ADDON_LOADED" and name == "ConsolePort" and (self.active or self.deviceSearch) then
         if not InCombatLockdown() then self:Disable()
         else self:Print("Konflikt s ConsolePortem; vypni jeden z addonu mimo boj.") end
     end
 end)
 CC:RegisterEvent("ADDON_LOADED")
 CC:RegisterEvent("PLAYER_LOGIN")
+CC:RegisterEvent("PLAYER_REGEN_ENABLED")
+CC:RegisterEvent("PLAYER_LOGOUT")
+

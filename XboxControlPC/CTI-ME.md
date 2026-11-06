@@ -1,4 +1,4 @@
-# Xbox Control PC 1.0.0 alpha — WoW Retail
+# Xbox Control PC 1.0.1 alpha — WoW Retail
 
 Samostatná varianta pro standardní Xbox ovladač bez zadních tlačítek. Vychází z ClawControl 0.5.11, kterou uživatel ověřil ve hře. Xbox varianta prošla testy mimo hru; na konkrétním PC a Xbox ovladači ještě ověřená není.
 
@@ -45,3 +45,9 @@ Původní akční bary 1–8 se při aktivním profilu standardně skryjí. Pro 
 ## Diagnostika a vypnutí
 
 /xboxcontrol otevře editor, /xboxcontrol status zobrazí stav, /xboxcontrol test test vstupů, /xboxcontrol off obnoví předchozí konfiguraci. Ozubené kolo funguje i bez klávesnice. Změny a přepínání profilu prováděj mimo boj. Před odebráním nebo přechodem na druhou variantu profil vypni, aby se obnovila původní konfigurace ovladače a CVars.
+
+## Rozpoznání ovladače od verze 1.0.1
+
+Po zapnutí profilu addon ponechá podporu gamepadu aktivní a opakuje vyhledávání až osm sekund. Během hledání stiskni A na ovladači. Prochází všechna zařízení, takže nefunkční první zařízení nebo staré uložené ID neblokuje další ovladač. Vypnutí hledání či vypršení limitu obnoví původní nastavení GamePadEnable. Začne-li boj, hledání pokračuje až po jeho konci.
+
+Jestli WoW zařízení ani potom nevidí, zadej `/console GamePadEnable 1`, poté `/reload` a `/xboxcontrol on`. Příkaz `/xboxcontrol status` nově ukazuje GamePadEnable, počet zařízení, aktivní ID a stav hledání. Tato oprava řeší ověřenou slabinu načasování v kódu; rozpoznání konkrétního ovladače v klientu ještě vyžaduje test.

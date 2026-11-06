@@ -5,7 +5,7 @@ Dvě samostatné varianty pro **World of Warcraft Retail**. Každý ZIP obsahuje
 | Varianta | Zařízení | Schopnosti | ZIP |
 |---|---|---|---|
 | ClawControl 0.5.11 alpha | MSI Claw 7 AI+ | A/B/X/Y/RB/LB na 4 vrstvách + M1/F9 a M2/F10 napevno na pozicích 7/8 v BAR 1 | [Stáhnout ClawControl](dist/ClawControl-0.5.11-alpha.zip?raw=true) |
-| Xbox Control PC 1.0.0 alpha | Standardní Xbox ovladač na PC | A/B/X/Y/RB/LB na 4 vrstvách = 24 pozic | [Stáhnout Xbox Control PC](dist/XboxControlPC-1.0.0-alpha.zip?raw=true) |
+| Xbox Control PC 1.0.1 alpha | Standardní Xbox ovladač na PC | A/B/X/Y/RB/LB na 4 vrstvách = 24 pozic | [Stáhnout Xbox Control PC](dist/XboxControlPC-1.0.1-alpha.zip?raw=true) |
 
 ## Instalace
 
@@ -30,3 +30,5 @@ Každá varianta má vlastní názvy rámců, uložené nastavení a příkaz: `
 - [Výsledky ověření](VALIDACE.md)
 
 ClawControl 0.5.11 uživatel potvrdil jako funkční ve hře. Xbox varianta prošla simulovanými integračními kontrolami, ale na konkrétním PC/Xbox ovladači ještě ověřená není. Repozitář obsahuje původní kód addonu a vytvořené textury kruhu; neobsahuje zdrojový kód ani grafiku ConsolePortu. Herní ikony a cooldowny poskytuje klient WoW.
+
+PC verze 1.0.1 po zapnutí podpory gamepadu vyhledává zařízení opakovaně až osm sekund; starý nebo nefunkční první vstup nepřekryje další připojený ovladač.

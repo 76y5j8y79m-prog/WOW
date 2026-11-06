@@ -37,7 +37,7 @@ function CC:CreateUI()
     f:SetSize(760, 655)
     f:SetPoint("CENTER")
     f:SetFrameStrata("DIALOG")
-    f.TitleText:SetText("Xbox Control PC | Editor ovladani | 1.0.0 alpha")
+    f.TitleText:SetText("Xbox Control PC | Editor ovladani | 1.0.1 alpha")
     f:SetClampedToScreen(true)
     f:EnableMouse(true); f:SetMovable(true); f:RegisterForDrag("LeftButton")
     f:SetScript("OnDragStart", f.StartMoving)
@@ -198,7 +198,8 @@ function CC:CreateUI()
         if not valid then status:SetText(err); return end
         if not self:ApplySettings(f.draft) then status:SetText("Nastaveni se nepodarilo pouzit; viz chat."); return end
         if activate and not self:Enable() then status:SetText("Profil se nepodarilo zapnout; viz chat."); return end
-        status:SetText("Ulozeno. " .. (self.active and "Profil je zapnuty." or "Profil je vypnuty."))
+        status:SetText(self.deviceSearch and "Nastaveni ulozeno. Hledam Xbox ovladac (max. 8 sekund)..." or
+            "Ulozeno. " .. (self.active and "Profil je zapnuty." or "Profil je vypnuty."))
         refresh()
     end
     button(f, "Ulozit a pouzit", 24, -568, 170, function() save(false) end)
@@ -263,3 +264,4 @@ end
 function CC:ShowOptions()
     if self.options:IsShown() then self.options:Hide() else self.options:Show() end
 end
+

@@ -2,7 +2,7 @@
 ## Title: Xbox Control PC
 ## Notes: WoW Retail pro standardni Xbox ovladac na PC, sest tlacitek a ctyri vrstvy.
 ## Author: Custom layout
-## Version: 1.0.0-alpha
+## Version: 1.0.1-alpha
 ## SavedVariables: XboxControlPCDB
 
 Layout.lua
@@ -14,3 +14,4 @@ Radial.lua
 Hud.lua
 NativeBars.lua
 UI.lua
+
